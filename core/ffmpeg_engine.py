@@ -51,6 +51,27 @@ def quote_arg(arg: str) -> str:
     return arg
 
 
+def build_time_args(start_time: str, end_time: str) -> List[str]:
+    """
+    Safely build -ss and -to / -t arguments, preventing '-to value smaller than -ss' errors.
+    """
+    time_args: List[str] = []
+    s_sec = time_to_seconds(start_time) if start_time else 0.0
+    e_sec = time_to_seconds(end_time) if end_time else 0.0
+
+    if s_sec > 0:
+        time_args.extend(["-ss", start_time.strip()])
+
+    if e_sec > 0:
+        if s_sec == 0 or e_sec > s_sec:
+            time_args.extend(["-to", end_time.strip()])
+        else:
+            # If end_time <= start_time, user specified clip duration (e.g. start at 5s, length 3s)
+            time_args.extend(["-t", end_time.strip()])
+
+    return time_args
+
+
 def build_command(
     input_file: str,
     output_file: str,
@@ -86,11 +107,7 @@ def build_command(
         scale_width = int(settings.get("scale_width", 480))
         loop = int(settings.get("loop", 0))
 
-        if start_time:
-            args.extend(["-ss", start_time])
-        if end_time:
-            args.extend(["-to", end_time])
-
+        args.extend(build_time_args(start_time, end_time))
         args.extend(["-i", input_file])
         filter_str = build_gif_filter(fps=fps, scale_width=scale_width)
         args.extend(["-filter_complex", filter_str, "-loop", str(loop)])
@@ -109,23 +126,17 @@ def build_command(
             args.extend(["-af", "loudnorm"])
 
     elif mode == "trim_cut":
-        start_time = settings.get("start_time", "00:00:00").strip()
+        start_time = settings.get("start_time", "").strip()
         end_time = settings.get("end_time", "").strip()
         stream_copy = settings.get("stream_copy", True)
+        t_args = build_time_args(start_time, end_time)
 
         if stream_copy:
-            if start_time:
-                args.extend(["-ss", start_time])
-            if end_time:
-                args.extend(["-to", end_time])
+            args.extend(t_args)
             args.extend(["-i", input_file, "-c", "copy"])
         else:
-            args.extend(["-i", input_file])
-            if start_time:
-                args.extend(["-ss", start_time])
-            if end_time:
-                args.extend(["-to", end_time])
-            args.extend(["-c:v", "libx264", "-crf", "20", "-c:a", "aac"])
+            args.extend(t_args)
+            args.extend(["-i", input_file, "-c:v", "libx264", "-crf", "20", "-c:a", "aac"])
 
     elif mode == "compress":
         resolution = settings.get("resolution", "720p")
@@ -166,11 +177,7 @@ def build_command(
     elif mode == "advanced":
         start_time = settings.get("start_time", "").strip()
         end_time = settings.get("end_time", "").strip()
-        if start_time:
-            args.extend(["-ss", start_time])
-        if end_time:
-            args.extend(["-to", end_time])
-
+        args.extend(build_time_args(start_time, end_time))
         args.extend(["-i", input_file])
 
         # Video Codec

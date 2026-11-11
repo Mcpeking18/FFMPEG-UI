@@ -6,6 +6,7 @@ import os
 import unittest
 from core.ffmpeg_engine import (
     build_command,
+    build_time_args,
     time_to_seconds,
     seconds_to_time,
     FFmpegRunner,
@@ -131,6 +132,19 @@ class TestFFmpegEngine(unittest.TestCase):
         self.assertEqual(parsed["fps"], "65.2")
         self.assertEqual(parsed["speed"], "2.5x")
         self.assertEqual(parsed["time"], "00:00:50.00")
+
+
+    def test_build_time_args(self):
+        # Valid range: start < end
+        self.assertEqual(build_time_args("00:00:01", "00:00:04"), ["-ss", "00:00:01", "-to", "00:00:04"])
+        # Inverted range: user specified duration (start=5s, length=2s)
+        self.assertEqual(build_time_args("00:00:05", "00:00:02"), ["-ss", "00:00:05", "-t", "00:00:02"])
+        # No end time: only -ss
+        self.assertEqual(build_time_args("00:00:03", ""), ["-ss", "00:00:03"])
+        self.assertEqual(build_time_args("00:00:03", "00:00:00"), ["-ss", "00:00:03"])
+        # Both zero: empty
+        self.assertEqual(build_time_args("00:00:00", "00:00:00"), [])
+        self.assertEqual(build_time_args("", ""), [])
 
 
 if __name__ == "__main__":

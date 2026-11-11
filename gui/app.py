@@ -1012,11 +1012,12 @@ class FFmpegApp(ctk.CTk):
             )
             self.media_detail_label.configure(text=info.summary)
 
-            # Auto set trim end time if empty or default
+            # Auto set trim and GIF time ranges for the new file
             if info.duration > 0:
+                self.trim_start_var.set("00:00:00")
                 self.trim_end_var.set(seconds_to_time(info.duration))
-                if not self.gif_end_var.get():
-                    self.gif_end_var.set(seconds_to_time(min(info.duration, 4.0)))
+                self.gif_start_var.set("00:00:00")
+                self.gif_end_var.set(seconds_to_time(min(info.duration, 5.0)))
 
             # Thumbnail
             if thumb_path and os.path.isfile(thumb_path):
@@ -1210,6 +1211,8 @@ class FFmpegApp(ctk.CTk):
                 e_sec = time_to_seconds(e_time) if e_time else total_duration
                 if e_sec > s_sec:
                     total_duration = e_sec - s_sec
+                elif e_sec > 0:
+                    total_duration = e_sec
 
         # Reset UI for running
         self.action_btn.configure(
