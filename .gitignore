@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+outputs/
+test_sample.mp4

@@ -398,6 +398,17 @@ class FFmpegRunner:
             return_code = -99
             error_lines.append(str(e))
         finally:
+            if self.process:
+                if self.process.stdout:
+                    try:
+                        self.process.stdout.close()
+                    except Exception:
+                        pass
+                if self.process.stderr:
+                    try:
+                        self.process.stderr.close()
+                    except Exception:
+                        pass
             self.is_running = False
 
             # Final 100% progress if success
